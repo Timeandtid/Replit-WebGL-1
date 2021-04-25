@@ -1,10 +1,5 @@
  
-const canvas = document.getElementById("canvas")
- 
-canvas.width = window.innerWidth
-canvas.height = window.innerHeight
- 
-const gl = canvas.getContext("webgl2", {antialias : false})
+let gl
  
 /**
 * Creates a program given the code of the vertex shader and fragment shader.

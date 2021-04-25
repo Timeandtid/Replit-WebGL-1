@@ -1,4 +1,11 @@
 
+const canvas = document.getElementById("canvas")
+ 
+canvas.width = window.innerWidth
+canvas.height = window.innerHeight
+ 
+gl = canvas.getContext("webgl2", {antialias : false})
+
 // Setup
 
 gl.clearColor(0, 0, 0, 1)
@@ -27,7 +34,7 @@ let down = 0
 const aspect = canvas.width / canvas.height
 const matrix = allMatrix(Math.PI * 0.5, aspect, 0.01, 45)
 let all = matrix(rx, ry)
-let cam = [1.5, -2, -3]
+let cam = [0.5, -2, -2]
 
 canvas.addEventListener("mousemove", e => {
 
