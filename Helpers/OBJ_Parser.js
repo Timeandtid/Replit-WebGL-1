@@ -9,86 +9,104 @@
  */
 parse = file => {
     
+    let object = -1
+    let group = -1
+    
     const data = {
         
-        "v"  : [], 			 		  // Vertex positions
+        "v"  : [],                    // Vertex positions
         "vt" : [], 			 		  // Vertex texcoords
-        "vn" : [], 			 		  // Vertex normals
-        "f"  : []   		 	      // Face indices
-    }
+        "vn" : [],                    // Vertex normals
+        "f"  : []                     // Face indices
+    };
     
-    data.f.push([[]])
+	// Create new object
+
+    (new_object = name => {
+
+		object ++
+		group = 0
+
+		const group_0 = []
+		group_0.name = "Group_0"
+
+		const this_object = [group_0]
+		this_object.name = name
+
+		data.f.push(this_object)
+	})("Object_0")
+
+	// Create new group
+
+	new_group = name => {
+
+		group ++
+
+		const this_group = []
+		this_group.name = name
+
+		data.f[object].push(this_group)
+	}
+
+	// Set shading for current group
+
+	set_shading = setting => {
+
+		const enable = setting != "off" && setting != "0"
+
+		data.f[object][group].smooth = enable
+	}
+
+	// For each line...
     
-    data.f[0].name = "Object 0"
-    data.f[0][0].name = "Group 0"
-    
-    let this_object = 0
-    let this_group = 0
-    
-    file.split("\n").forEach(i => {   // Parse by line
+    file.split("\n").forEach(line => {
         
-        const i0 = i[0]
+        const char0 = line[0]
         
-        if(i0 == "#" ||               // comment
-            i0 == " " || 			  // blank
+        if(char0 == "#" ||            // Comment
+            char0 == " " ||           // Blank
             
-            i0 == "u" ||	  	      // usemtl
-            i0 == "m" || 	  	      // mtllib
+            char0 == "u" ||           // Usemtl
+        	char0 == "m" ||           // Mtllib
             
-            !i) return                // return if useless
+            !line) return             // Return if useless
         
-        i = i.trim().split(/\s+/g)    // Split along spaces
-        const t = i.splice(0, 1)[0]   // Get type
+		// Get info and identifier
+
+        const info = line.trim().split(/\s+/g)
+        const iden = info.splice(0, 1)[0]
+
+		// Add data based on identifier
         
-        switch (t) {
+        switch (iden) {
         
-        	case "o" : 	  	          // new object
+        	case "o" : new_object(info.join` `); break
             
-            	this_object = data.f.length
-                
-                data.f.push([[]])
-                data.f[this_object].name = i.join(" ")
-            break
+            case "g" : new_group(info.join` `); break
             
-            case "g" : 	  	          // new group
+            case "s" : set_shading(info[0]); break
             
-        		this_group = data.f[this_object].length
-        
-        		data.f[this_object].push([])
-            	data.f[this_object][this_group].name = i.join(" ")
-            break
+            case "f" : data.f[object][group].push(info); break
             
-            case "f" : 	  	          // new face
-            
-            	data.f[this_object][this_group].push(i)
-            break
-            
-            case "s" : 	  	          // enable/disable smooth
-            	
-                const i0 = i[0]
-                
-                data.f[this_object][this_group].smooth = i0 != "off" && +i0
-            break
-            
-            default :	 		      // Add data to proper array
-            
-            	data[t].push(i)
+            default : data[iden].push(info)
         }
     })
+
+	// Remove empty object/group arrays
     
     const objects = []
     
-    data.f.forEach(i => {             // Get rid of empty lists
+    data.f.forEach(object => {
         
-        const object = []
-        object.name = i.name
+        const output = []
+        output.name = object.name
         
-        i.forEach(o => {
+        object.forEach(group => {
         
-        	if(o.length) object.push(o)
+        	if(group.length) output.push(group)
         })
         
-        if(object.length) objects.push(object)
+        if(output.length) objects.push(output)
     })
     
     data.f = objects
@@ -120,7 +138,7 @@ construct = (program, data, config) => {
 			data.v = data.v.map(i => i.map((o, p) => o *= scaler[p]))
 		}
 
-		if(xyz) {					  // Switch x, y and z's
+		if(xyz) {                   // Switch x, y and z's
 
 			data.v = data.v.map(i => {
 
@@ -136,7 +154,7 @@ construct = (program, data, config) => {
 			})
 		}
 
-		if(flip_face) {				  // Flip faces inside-out
+		if(flip_face) {             // Flip faces inside-out
 
 			data.f = data.f.map(i => {
 				
@@ -159,9 +177,11 @@ construct = (program, data, config) => {
 			})
 		}
 
-		if(flip_normal) {			  // Flip normals
+		if(flip_normal) {           // Flip normals
 
 			normcoeff = -1
+
+			data.vn = data.vn.map(i => i.map(o => -o))
 		}
 	}
 	
@@ -174,9 +194,9 @@ construct = (program, data, config) => {
 		data.vn
 	]
 
-	return data.f.map(i => {		  // For each object...
+	return data.f.map(i => {          // For each object...
 
-		return i.map(o => {			  // For each group...
+		return i.map(o => {           // For each group...
 			
 			const gdata = [
 				
@@ -187,7 +207,7 @@ construct = (program, data, config) => {
 
 			let ix = []
 
-			o.forEach(p => {	      // For each polygon...
+			o.forEach(p => {          // For each polygon...
 
 				const pl = p.length
         		const v0 = p[0]

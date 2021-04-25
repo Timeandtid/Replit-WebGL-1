@@ -2,11 +2,11 @@
 // Setup
 
 gl.clearColor(0, 0, 0, 1)
-    
+
 gl.enable(gl.DEPTH_TEST)
-    
+
 gl.depthFunc(gl.LEQUAL)
-    
+
 gl.enable(gl.CULL_FACE)
 
 const program = createProgram(vsh, fsh)
@@ -27,7 +27,7 @@ let down = 0
 const aspect = canvas.width / canvas.height
 const matrix = allMatrix(Math.PI * 0.5, aspect, 0.01, 45)
 let all = matrix(rx, ry)
-let cam = [0.5, -2, -2]
+let cam = [1.5, -2, -3]
 
 canvas.addEventListener("mousemove", e => {
 
@@ -44,7 +44,16 @@ canvas.addEventListener("mouseout", () => down = 0)
 
 // Object
 
-const object = construct(program, parse(obj), {
+const parsed = parse(obj)
+
+/*parsed.f[0] = parsed.f[0].map(i => {
+
+	i.smooth = true
+
+	return i
+})*/
+
+const object = construct(program, parsed, {
 
 	scale : 1
 })
