@@ -8,109 +8,118 @@
  * @param {string} file - Obj file
  */
 parse = file => {
-    
+
     let object = -1
     let group = -1
-    
+
     const data = {
-        
-        "v"  : [],                    // Vertex positions
-        "vt" : [], 			 		  // Vertex texcoords
-        "vn" : [],                    // Vertex normals
-        "f"  : []                     // Face indices
+
+        "v": [],
+        "vt": [],
+        "vn": [],
+        "f": []
     };
-    
-	// Create new object
+
+    // Create new object
 
     (new_object = name => {
 
-		object ++
-		group = 0
+        object++
+        group = 0
 
-		const group_0 = []
-		group_0.name = "Group_0"
+        const group_0 = []
+        group_0.name = "Group_0"
 
-		const this_object = [group_0]
-		this_object.name = name
+        const this_object = [group_0]
+        this_object.name = name
 
-		data.f.push(this_object)
-	})("Object_0")
+        data.f.push(this_object)
+    })("Object_0")
 
-	// Create new group
+    // Create new group
 
-	new_group = name => {
+    new_group = name => {
 
-		group ++
+        group++
 
-		const this_group = []
-		this_group.name = name
+        const this_group = []
+        this_group.name = name
 
-		data.f[object].push(this_group)
-	}
+        data.f[object].push(this_group)
+    }
 
-	// Set shading for current group
+    // Set shading for current group
 
-	set_shading = setting => {
+    set_shading = setting => {
 
-		const enable = setting != "off" && setting != "0"
+        const enable = setting != "off" && setting != "0"
 
-		data.f[object][group].smooth = enable
-	}
+        data.f[object][group].smooth = enable
+    }
 
-	// For each line...
-    
+    // For each line...
+
     file.split("\n").forEach(line => {
-        
+
         const char0 = line[0]
-        
-        if(char0 == "#" ||            // Comment
-            char0 == " " ||           // Blank
-            
-            char0 == "u" ||           // Usemtl
-        	char0 == "m" ||           // Mtllib
-            
-            !line) return             // Return if useless
-        
-		// Get info and identifier
+
+        if (char0 == "#" || // Comment
+            char0 == " " || // Blank
+
+            char0 == "u" || // Usemtl
+            char0 == "m" || // Mtllib
+
+            !line) return // Return if useless
+
+        // Get info and identifier
 
         const info = line.trim().split(/\s+/g)
         const iden = info.splice(0, 1)[0]
 
-		// Add data based on identifier
-        
+        // Add data based on identifier
+
         switch (iden) {
-        
-        	case "o" : new_object(info.join` `); break
-            
-            case "g" : new_group(info.join` `); break
-            
-            case "s" : set_shading(info[0]); break
-            
-            case "f" : data.f[object][group].push(info); break
-            
-            default : data[iden].push(info)
+
+            case "o":
+                new_object(info.join` `);
+                break
+
+            case "g":
+                new_group(info.join` `);
+                break
+
+            case "s":
+                set_shading(info[0]);
+                break
+
+            case "f":
+                data.f[object][group].push(info);
+                break
+
+            default:
+                data[iden].push(info)
         }
     })
 
-	// Remove empty object/group arrays
-    
+    // Remove empty object/group arrays
+
     const objects = []
-    
+
     data.f.forEach(object => {
-        
+
         const output = []
         output.name = object.name
-        
+
         object.forEach(group => {
-        
-        	if(group.length) output.push(group)
+
+            if (group.length) output.push(group)
         })
-        
-        if(output.length) objects.push(output)
+
+        if (output.length) objects.push(output)
     })
-    
+
     data.f = objects
-    
+
     return data
 }
 
@@ -122,296 +131,314 @@ parse = file => {
  */
 construct = (program, data, config) => {
 
-	let normcoeff = 1
+    let normcoeff = 1
 
-	if(config) {
+    if (config) {
 
-		const scale = config.scale
-		const xyz = config.xyz
-		const flip_face = config.flip_face
-		const flip_normal = config.flip_normal
+        const scale = config.scale
+        const xyz = config.xyz
+        const flip_face = config.flip_face
+        const flip_normal = config.flip_normal
 
-		if(scale) {                   // Scale model
+        // Scale model
 
-			const scaler = scale.length ? scale : Array(3).fill(scale)
+        if (scale) {
 
-			data.v = data.v.map(i => i.map((o, p) => o *= scaler[p]))
-		}
+            const scaler = scale.length ? scale : Array(3).fill(scale)
 
-		if(xyz) {                   // Switch x, y and z's
+            data.v = data.v.map(i => i.map((o, p) => o *= scaler[p]))
+        }
 
-			data.v = data.v.map(i => {
+        // Switch x, y and z's
 
-				const rearr = []
-				const order = "xyz"
+        if (xyz) {
 
-				i.forEach((o, p) => {
+            data.v = data.v.map(i => {
 
-					rearr[order.indexOf(xyz[p])] = o
-				})
+                const rearr = []
+                const order = "xyz"
 
-				return rearr
-			})
-		}
+                i.forEach((o, p) => {
 
-		if(flip_face) {             // Flip faces inside-out
+                    rearr[order.indexOf(xyz[p])] = o
+                })
 
-			data.f = data.f.map(i => {
-				
-				const oname = i.name
-				const ooutput = i.map(o => {
+                return rearr
+            })
+        }
 
-					const gname = o.name
-					const gsmooth = o.smooth
-					const goutput = o.map(p => p.reverse())
+        // Flip faces inside-out
 
-					goutput.name = gname
-					goutput.smooth = gsmooth
+        if (flip_face) {
 
-					return goutput
-				})
+            data.f = data.f.map(i => {
 
-				ooutput.name = oname
+                const oname = i.name
+                const ooutput = i.map(o => {
 
-				return ooutput
-			})
-		}
+                    const gname = o.name
+                    const gsmooth = o.smooth
+                    const goutput = o.map(p => p.reverse())
 
-		if(flip_normal) {           // Flip normals
+                    goutput.name = gname
+                    goutput.smooth = gsmooth
 
-			normcoeff = -1
+                    return goutput
+                })
 
-			data.vn = data.vn.map(i => i.map(o => -o))
-		}
-	}
-	
-	// Convert keyed list to ordered list
+                ooutput.name = oname
 
-	const ordered = [
+                return ooutput
+            })
+        }
 
-		data.v,
-		data.vt,
-		data.vn
-	]
+        // Flip normals
 
-	return data.f.map(i => {          // For each object...
+        if (flip_normal) {
 
-		return i.map(o => {           // For each group...
-			
-			const gdata = [
-				
-				[],                   // Vertex positions
-				[],                   // Texture coordinates
-				[]                    // Vertex normals
-			]
+            normcoeff = -1
 
-			let ix = []
+            data.vn = data.vn.map(i => i.map(o => -o))
+        }
+    }
 
-			o.forEach(p => {          // For each polygon...
+    // Convert keyed list to ordered list
 
-				const pl = p.length
-        		const v0 = p[0]
-        		const t = Array(pl - 2)
+    const ordered = [
 
-				// Convert polygons into triangles
+        data.v,
+        data.vt,
+        data.vn
+    ]
 
-        		for(let n = 1; n < pl - 1; n ++) {
+    // For each object...
 
-        		    t[n-1] = [v0, p[n], p[n + 1]]
-        		}
-        
-				t.forEach(j => {      // For each triangle...
-					
-					j.forEach(k => {  // For each vertex...
-						
-						// Add vertex data to associated list
-						// in final array
-						
-						k.split("/").forEach((p, l) => {
-							
-							gdata[l].push(...ordered[l][p - 1])
-						})
-					})
-				})
+    return data.f.map(i => {
 
-				ix.push(...t)
-			})
+        // For each group...
 
-			let v = gdata[0]
-    		const len = v.length
-    		const tlen = len / 3
+        return i.map(o => {
 
-			// Default values
+            const gdata = [
 
-			gdata[1] = gdata[1].length ? gdata[1] : Array(tlen * 2).fill(0)
-			gdata[2] = gdata[2].length ? gdata[2] : (() => {
+                [],
+                [],
+                []
+            ]
 
-				// If normals array is empty, calculate
-				// normals
+            let ix = []
 
-				const nv = []
+            // For each polygon...
 
-				if(o.smooth) {
+            o.forEach(p => {
 
-					// Extract vertex position data from
-					// index data recorded previously
+                const pl = p.length
+                const v0 = p[0]
+                const t = Array(pl - 2)
 
-					ix = ix.map(w => w.map(b => {
+                // Convert polygons into triangles
 
-						return [].concat(b.split("/"))[0]
-					}))
+                for (let n = 1; n < pl - 1; n++) {
 
-					// If group has smoothing enabled
-					// Calculate for smooth normals
+                    t[n - 1] = [v0, p[n], p[n + 1]]
+                }
 
-					let nn = []
+                // For each triangle...
 
-					ix.forEach(b => {
-
-						const b0 = b[0] - 1
-						const b1 = b[1] - 1
-						const b2 = b[2] - 1
-						
-						const p0 = data.v[b0]
-						const p1 = data.v[b1]
-						const p2 = data.v[b2]
-
-						const p0x = p0[0]
-						const p0y = p0[1]
-						const p0z = p0[2]
-
-						const lex = p1[0] - p0x
-						const ley = p1[1] - p0y
-						const lez = p1[2] - p0z
-
-						const nex = p2[0] - p0x
-						const ney = p2[1] - p0y
-						const nez = p2[2] - p0z
-
-						const cpx = ley * nez - lez * ney
-						const cpy = lez * nex - lex * nez
-						const cpz = lex * ney - ley * nex
-
-						nn[b0] ||= [0, 0, 0]
-						nn[b1] ||= [0, 0, 0]
-						nn[b2] ||= [0, 0, 0]
-
-						const nn0 = nn[b0]
-						const nn1 = nn[b1]
-						const nn2 = nn[b2]
-
-						nn0[0] += cpx
-						nn0[1] += cpy
-						nn0[2] += cpz
-
-						nn1[0] += cpx
-						nn1[1] += cpy
-						nn1[2] += cpz
-
-						nn2[0] += cpx
-						nn2[1] += cpy
-						nn2[2] += cpz
-					})
-
-					nn = nn.map(k => {
-
-						if(!k) return
-
-						const kx = k[0]
-						const ky = k[1]
-						const kz = k[2]
-
-						const h = normcoeff / Math.sqrt(kx * kx + ky * ky + kz * kz)
-
-						return [
-
-							kx * h,
-							ky * h,
-							kz * h
-						]
-					})
-
-					ix.forEach(b => {
-
-						const b0 = b[0] - 1
-						const b1 = b[1] - 1
-						const b2 = b[2] - 1
-
-						const nn0 = nn[b0]
-						const nn1 = nn[b1]
-						const nn2 = nn[b2]
-
-						nv.push(
-
-							nn0[0], nn0[1], nn0[2],
-							nn1[0], nn1[1], nn1[2],
-							nn2[0], nn2[1], nn2[2]
-						)
-					})
-				}else{
-
-					// If no smoothing, calculate normal
-					// For each face
-
-					for(let n = 0; n < len; n += 9) {
-						
-						const p0x = v[n]
-						const p0y = v[n + 1]
-						const p0z = v[n + 2]
-						
-						const lex = v[n + 3] - p0x
-						const ley = v[n + 4] - p0y
-						const lez = v[n + 5] - p0z
-						
-						const nex = v[n + 6] - p0x
-						const ney = v[n + 7] - p0y
-						const nez = v[n + 8] - p0z
-						
-						let cpx = ley * nez - lez * ney
-						let cpy = lez * nex - lex * nez
-						let cpz = lex * ney - ley * nex
-						
-						const h = normcoeff / Math.sqrt(cpx * cpx + cpy * cpy + cpz * cpz)
-						
-						cpx *= h
-						cpy *= h
-						cpz *= h
-						
-						nv.push(
-							
-							cpx, cpy, cpz,
-							cpx, cpy, cpz,
-							cpx, cpy, cpz
-						)
-					}
-				}
-
-				return nv
-			})()
-
-			// Create and bind vertex array object
-			
-			const vao = gl.createVertexArray()
-			gl.bindVertexArray(vao)
-			
-			// Set attributes
-			
-			setAttrib(program, "a_position", new Float32Array(v))
-			setAttrib(program, "a_texcoord", new Float32Array(gdata[1]), 2)
-			setAttrib(program, "a_normal", new Float32Array(gdata[2]))
-			
-			// Unbind for safety
-			
-			gl.bindVertexArray(null)
-			
-			return () => {
-				
-				// Draw function
-				
-				gl.bindVertexArray(vao)
-				gl.drawArrays(gl.TRIANGLES, 0, tlen)
-				gl.bindVertexArray(null)
-			}
-		})
-	})
+                t.forEach(j => {
+
+                    // For each vertex...
+
+                    j.forEach(k => {
+
+                        // Add vertex data to associated list
+                        // in final array
+
+                        k.split("/").forEach((p, l) => {
+
+                            gdata[l].push(...ordered[l][p - 1])
+                        })
+                    })
+                })
+
+                ix.push(...t)
+            })
+
+            let v = gdata[0]
+            const len = v.length
+            const tlen = len / 3
+
+            // Default values
+
+            gdata[1] = gdata[1].length ? gdata[1] : Array(tlen * 2).fill(0)
+            gdata[2] = gdata[2].length ? gdata[2] : (() => {
+
+                // If normals array is empty, calculate
+                // normals
+
+                const nv = []
+
+                if (o.smooth) {
+
+                    // Extract vertex position data from
+                    // index data recorded previously
+
+                    ix = ix.map(w => w.map(b => {
+
+                        return [].concat(b.split("/"))[0]
+                    }))
+
+                    // If group has smoothing enabled
+                    // Calculate for smooth normals
+
+                    let nn = []
+
+                    ix.forEach(b => {
+
+                        const b0 = b[0] - 1
+                        const b1 = b[1] - 1
+                        const b2 = b[2] - 1
+
+                        const p0 = data.v[b0]
+                        const p1 = data.v[b1]
+                        const p2 = data.v[b2]
+
+                        const p0x = p0[0]
+                        const p0y = p0[1]
+                        const p0z = p0[2]
+
+                        const lex = p1[0] - p0x
+                        const ley = p1[1] - p0y
+                        const lez = p1[2] - p0z
+
+                        const nex = p2[0] - p0x
+                        const ney = p2[1] - p0y
+                        const nez = p2[2] - p0z
+
+                        const cpx = ley * nez - lez * ney
+                        const cpy = lez * nex - lex * nez
+                        const cpz = lex * ney - ley * nex
+
+                        nn[b0] || = [0, 0, 0]
+                        nn[b1] || = [0, 0, 0]
+                        nn[b2] || = [0, 0, 0]
+
+                        const nn0 = nn[b0]
+                        const nn1 = nn[b1]
+                        const nn2 = nn[b2]
+
+                        nn0[0] += cpx
+                        nn0[1] += cpy
+                        nn0[2] += cpz
+
+                        nn1[0] += cpx
+                        nn1[1] += cpy
+                        nn1[2] += cpz
+
+                        nn2[0] += cpx
+                        nn2[1] += cpy
+                        nn2[2] += cpz
+                    })
+
+                    nn = nn.map(k => {
+
+                        if (!k) return
+
+                        const kx = k[0]
+                        const ky = k[1]
+                        const kz = k[2]
+
+                        const h = normcoeff / Math.sqrt(kx * kx + ky * ky + kz * kz)
+
+                        return [
+
+                            kx * h,
+                            ky * h,
+                            kz * h
+                        ]
+                    })
+
+                    ix.forEach(b => {
+
+                        const b0 = b[0] - 1
+                        const b1 = b[1] - 1
+                        const b2 = b[2] - 1
+
+                        const nn0 = nn[b0]
+                        const nn1 = nn[b1]
+                        const nn2 = nn[b2]
+
+                        nv.push(
+
+                            nn0[0], nn0[1], nn0[2],
+                            nn1[0], nn1[1], nn1[2],
+                            nn2[0], nn2[1], nn2[2]
+                        )
+                    })
+                } else {
+
+                    // If no smoothing, calculate normal
+                    // For each face
+
+                    for (let n = 0; n < len; n += 9) {
+
+                        const p0x = v[n]
+                        const p0y = v[n + 1]
+                        const p0z = v[n + 2]
+
+                        const lex = v[n + 3] - p0x
+                        const ley = v[n + 4] - p0y
+                        const lez = v[n + 5] - p0z
+
+                        const nex = v[n + 6] - p0x
+                        const ney = v[n + 7] - p0y
+                        const nez = v[n + 8] - p0z
+
+                        let cpx = ley * nez - lez * ney
+                        let cpy = lez * nex - lex * nez
+                        let cpz = lex * ney - ley * nex
+
+                        const h = normcoeff / Math.sqrt(cpx * cpx + cpy * cpy + cpz * cpz)
+
+                        cpx *= h
+                        cpy *= h
+                        cpz *= h
+
+                        nv.push(
+
+                            cpx, cpy, cpz,
+                            cpx, cpy, cpz,
+                            cpx, cpy, cpz
+                        )
+                    }
+                }
+
+                return nv
+            })()
+
+            // Create and bind vertex array object
+
+            const vao = gl.createVertexArray()
+            gl.bindVertexArray(vao)
+
+            // Set attributes
+
+            setAttrib(program, "a_position", new Float32Array(v))
+            setAttrib(program, "a_texcoord", new Float32Array(gdata[1]), 2)
+            setAttrib(program, "a_normal", new Float32Array(gdata[2]))
+
+            // Unbind for safety
+
+            gl.bindVertexArray(null)
+
+            return () => {
+
+                // Draw function
+
+                gl.bindVertexArray(vao)
+                gl.drawArrays(gl.TRIANGLES, 0, tlen)
+                gl.bindVertexArray(null)
+            }
+        })
+    })
 }

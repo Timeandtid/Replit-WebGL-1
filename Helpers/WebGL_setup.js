@@ -4,7 +4,9 @@ const canvas = document.getElementById("canvas")
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight
 
-const gl = canvas.getContext("webgl2", {antialias : false})
+const gl = canvas.getContext("webgl2", {
+    antialias: false
+})
 
 /**
  * Creates a program given the code of the vertex shader and fragment shader.
@@ -12,34 +14,34 @@ const gl = canvas.getContext("webgl2", {antialias : false})
  * @param {string} fcode - Fragment shader code
  */
 createProgram = (vcode, fcode) => {
-    
+
     createShader = (type, code) => {
-        
+
         const shader = gl.createShader(type)
-        
+
         gl.shaderSource(shader, code)
         gl.compileShader(shader)
-        
+
         return shader
     }
-    
+
     const vshader = createShader(gl.VERTEX_SHADER, vcode)
-    const fshader = createShader(gl.FRAGMENT_SHADER,fcode)
-    
+    const fshader = createShader(gl.FRAGMENT_SHADER, fcode)
+
     const program = gl.createProgram()
-    
+
     gl.attachShader(program, vshader)
     gl.attachShader(program, fshader)
 
-	gl.linkProgram(program)
+    gl.linkProgram(program)
 
-	gl.detachShader(program, vshader)
-	gl.deleteShader(vshader)
+    gl.detachShader(program, vshader)
+    gl.deleteShader(vshader)
 
-	gl.detachShader(program, fshader)
-	gl.deleteShader(fshader)
+    gl.detachShader(program, fshader)
+    gl.deleteShader(fshader)
 
-	return program
+    return program
 }
 
 /**
@@ -53,24 +55,24 @@ createProgram = (vcode, fcode) => {
  */
 setAttrib = (program, name, array, count, btype, dtype) => {
 
-	const buffer = gl.createBuffer()
+    const buffer = gl.createBuffer()
 
-    btype ||= gl.ARRAY_BUFFER
-    dtype ||= gl.FLOAT
-    count ||= 3
+    btype || = gl.ARRAY_BUFFER
+    dtype || = gl.FLOAT
+    count || = 3
 
-	program = [].concat(program)
+    program = [].concat(program)
 
-	gl.bindBuffer(btype, buffer)
-	gl.bufferData(btype, array, gl.STATIC_DRAW)
+    gl.bindBuffer(btype, buffer)
+    gl.bufferData(btype, array, gl.STATIC_DRAW)
 
-	program.forEach(i => {
+    program.forEach(i => {
 
-		const loc = gl.getAttribLocation(i, name)
+        const loc = gl.getAttribLocation(i, name)
 
         gl.enableVertexAttribArray(loc)
         gl.vertexAttribPointer(loc, count, dtype, false, 0, 0)
-	})
+    })
 }
 
 /**
@@ -82,33 +84,33 @@ setAttrib = (program, name, array, count, btype, dtype) => {
  */
 allMatrix = (fov, aspect, near, far) => {
 
-	const ir = 1 / (near - far)
-	const f1 = 1 / Math.tan(fov * 0.5)
-	const f2 = f1 / aspect
-	const nf = (near + far) * ir
-	const nf2 = 2 * near * far * ir
-	
-	return (rx, ry) => {
-    
-		const cx = Math.cos(ry)
-		const sx = Math.sin(ry)
+    const ir = 1 / (near - far)
+    const f1 = 1 / Math.tan(fov * 0.5)
+    const f2 = f1 / aspect
+    const nf = (near + far) * ir
+    const nf2 = 2 * near * far * ir
 
-		const cy = Math.cos(rx)
-		const sy = Math.sin(rx)
+    return (rx, ry) => {
 
-		/**
-		 * Returns a pre-multiplied rotation and perspective matrix
-		 * @param {float} rx - Rotation about the x-axis
-		 * @param {float} ry - Rotation about the y-axis
-		 */
-		return [
+        const cx = Math.cos(ry)
+        const sx = Math.sin(ry)
 
-			cy * f2, -sy * sx * f1, -sy * cx * nf,  sy * cx,
-			0,        cx * f1,      -sx * nf,       sx,
-			sy * f2,  sx * cy * f1,  cx * cy * nf, -cx * cy,
-			0,        0,             nf2,           0,
-		]
-	}
+        const cy = Math.cos(rx)
+        const sy = Math.sin(rx)
+
+        /**
+         * Returns a pre-multiplied rotation and perspective matrix
+         * @param {float} rx - Rotation about the x-axis
+         * @param {float} ry - Rotation about the y-axis
+         */
+        return [
+
+            cy * f2, -sy * sx * f1, -sy * cx * nf,  sy * cx,
+            0,        cx * f1,      -sx * nf,       sx,
+            sy * f2,  sx * cy * f1,  cx * cy * nf, -cx * cy,
+            0,        0,             nf2,           0,
+        ]
+    }
 }
 
 /**
@@ -121,21 +123,21 @@ allMatrix = (fov, aspect, near, far) => {
  * @param {gl color format} itype - Internal color format of texture (Default: gl.RGB)
  */
 createTex = (data, width, height, type, dtype, itype) => {
-	
-	dtype ||= gl.UNSIGNED_BYTE
-	type ||= gl.RGB 
-	itype ||= type 
-	
-	const tex = gl.createTexture()
 
-	gl.bindTexture(gl.TEXTURE_2D, tex)
+    dtype || = gl.UNSIGNED_BYTE
+    type || = gl.RGB
+    itype || = type
 
-	gl.texImage2D(gl.TEXTURE_2D, 0, itype, width, height, 0, type, dtype, data)
+    const tex = gl.createTexture()
 
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+    gl.bindTexture(gl.TEXTURE_2D, tex)
+
+    gl.texImage2D(gl.TEXTURE_2D, 0, itype, width, height, 0, type, dtype, data)
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-	
-	return tex
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+
+    return tex
 }
